@@ -4,7 +4,8 @@
   color: #182924;
   background: transparent;
   --paper: #ffffff;
-  --tint: 100%;
+  --focused-tint: 85%;
+  --unfocused-tint: 85%;
   --line: #d9e4df;
   --green: #23634f;
   --green-light: #e7f2ec;
@@ -21,7 +22,15 @@ body { display: grid; grid-template-rows: auto minmax(0, 1fr); isolation: isolat
   pointer-events: none;
   background: var(--paper);
 }
-body.glass #underlay { background: color-mix(in srgb, var(--paper) var(--tint), transparent); }
+body.glass #underlay {
+  --tint: var(--unfocused-tint);
+  background: color-mix(in srgb, var(--paper) var(--tint), transparent);
+  transition: background-color 140ms ease-out;
+}
+body.glass.window-focused #underlay { --tint: var(--focused-tint); }
+@media (prefers-reduced-motion: reduce) {
+  body.glass #underlay { transition: none; }
+}
 body.browse-only { grid-template-rows: minmax(0, 1fr); }
 body.browse-only .toolbar { display: none; }
 body.title-hidden [data-drag] { cursor: move; }

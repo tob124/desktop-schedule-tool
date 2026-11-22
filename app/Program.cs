@@ -8,7 +8,7 @@ using System.Threading;
 using System.Windows.Forms;
 
 [assembly: AssemblyTitle("日程表")]
-[assembly: AssemblyVersion("1.2.1.0")]
+[assembly: AssemblyVersion("1.3.0.0")]
 [assembly: TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
 
 namespace ScdDesktop

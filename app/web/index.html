@@ -68,12 +68,24 @@
       <div class="setting-group">
         <label class="setting-line"><span>衬底颜色</span><input id="setting-color" type="color"></label>
         <label class="setting-line"><span>背景模糊</span><input id="setting-blur" type="checkbox"></label>
-        <div class="setting-range">
-          <label for="setting-opacity" id="opacity-label">窗口不透明度</label>
-          <output id="setting-percent" for="setting-opacity">100%</output>
+        <div class="setting-range" id="window-opacity">
+          <label for="setting-opacity">窗口不透明度</label>
+          <output id="setting-opacity-percent" for="setting-opacity">100%</output>
           <input id="setting-opacity" type="range" min="30" max="100" step="1" value="100">
         </div>
-        <p id="glass-note" class="setting-note" hidden>模糊使用 Windows 亚克力效果，受系统透明效果设置影响。调低衬底不透明度可看到背景。</p>
+        <div id="glass-opacity" hidden>
+          <div class="setting-range">
+            <label for="setting-focused-opacity">聚焦时衬底不透明度</label>
+            <output id="setting-focused-opacity-percent" for="setting-focused-opacity">85%</output>
+            <input id="setting-focused-opacity" type="range" min="30" max="100" step="1" value="85">
+          </div>
+          <div class="setting-range">
+            <label for="setting-unfocused-opacity">失焦时衬底不透明度</label>
+            <output id="setting-unfocused-opacity-percent" for="setting-unfocused-opacity">85%</output>
+            <input id="setting-unfocused-opacity" type="range" min="30" max="100" step="1" value="85">
+          </div>
+          <p class="setting-note">模糊使用 Windows 亚克力效果，受系统透明效果设置影响。</p>
+        </div>
       </div>
       <p id="settings-message" role="alert" hidden></p>
       <footer class="settings-actions">

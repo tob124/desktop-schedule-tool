@@ -254,12 +254,18 @@ document.addEventListener('keydown', event => {
   }
 }, { capture: true });
 
-function applyAppearance({ preferences, glass, titleHidden }) {
+function applyBackdropFocus(focused) {
+  document.body.classList.toggle('window-focused', focused);
+}
+
+function applyAppearance({ preferences, glass, titleHidden, focused }) {
   document.body.classList.toggle('browse-only', preferences.BrowseOnly);
   document.body.classList.toggle('title-hidden', titleHidden);
   document.body.classList.toggle('glass', glass);
   document.documentElement.style.setProperty('--paper', preferences.Color);
-  document.documentElement.style.setProperty('--tint', preferences.Opacity + '%');
+  document.documentElement.style.setProperty('--focused-tint', preferences.FocusedBackdropOpacity + '%');
+  document.documentElement.style.setProperty('--unfocused-tint', preferences.UnfocusedBackdropOpacity + '%');
+  applyBackdropFocus(focused);
   editor.showFormulaBar = !preferences.BrowseOnly;
 }
 
@@ -269,11 +275,20 @@ function showSettingsError(text) {
   settingsSubmit.disabled = false;
 }
 
-function updateOpacityLabel() {
-  setting('percent').textContent = setting('opacity').value + '%';
-  document.querySelector('#opacity-label').textContent =
-    setting('blur').checked ? '衬底不透明度' : '窗口不透明度';
-  document.querySelector('#glass-note').hidden = !setting('blur').checked;
+const opacityFields = {
+  opacity: 'Opacity',
+  'focused-opacity': 'FocusedBackdropOpacity',
+  'unfocused-opacity': 'UnfocusedBackdropOpacity',
+};
+
+function updateOpacityLabel(name) {
+  setting(name + '-percent').textContent = setting(name).value + '%';
+}
+
+function updateOpacityOptions() {
+  const blurEnabled = setting('blur').checked;
+  document.querySelector('#window-opacity').hidden = blurEnabled;
+  document.querySelector('#glass-opacity').hidden = !blurEnabled;
 }
 
 function showSettings({ preferences, startOnLogin }) {
@@ -283,18 +298,20 @@ function showSettings({ preferences, startOnLogin }) {
   setting('titlebar').checked = preferences.HideTitleBar;
   setting('color').value = preferences.Color;
   setting('blur').checked = preferences.Blur;
-  setting('opacity').value = preferences.Opacity;
-  updateOpacityLabel();
+  for (const [name, property] of Object.entries(opacityFields)) {
+    setting(name).value = preferences[property];
+    updateOpacityLabel(name);
+  }
+  updateOpacityOptions();
   showSettingsError(startOnLogin == null ? '当前无法读取 Windows 启动设置。' : '');
   closeMenus();
   if (!settings.open) settings.showModal();
 }
 
-setting('opacity').addEventListener('input', updateOpacityLabel);
-setting('blur').addEventListener('change', () => {
-  if (setting('blur').checked && setting('opacity').value === '100') setting('opacity').value = '85';
-  updateOpacityLabel();
-});
+for (const name of Object.keys(opacityFields)) {
+  setting(name).addEventListener('input', () => updateOpacityLabel(name));
+}
+setting('blur').addEventListener('change', updateOpacityOptions);
 function closeSettings() {
   if (!settings.open || settingsSubmit.disabled) return;
   settings.close();
@@ -317,6 +334,8 @@ settingsForm.addEventListener('submit', event => {
       Color: setting('color').value,
       Blur: setting('blur').checked,
       Opacity: Number(setting('opacity').value),
+      FocusedBackdropOpacity: Number(setting('focused-opacity').value),
+      UnfocusedBackdropOpacity: Number(setting('unfocused-opacity').value),
     },
   });
 });
@@ -340,6 +359,9 @@ webview.addEventListener('message', ({ data: message }) => {
       break;
     case 'appearance':
       applyAppearance(message);
+      break;
+    case 'backdrop-focus':
+      applyBackdropFocus(message.focused);
       break;
     case 'desktop-reveal':
       revealSheet();

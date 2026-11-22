@@ -14,6 +14,7 @@ namespace ScdDesktop
         private IntPtr appearanceWindow;
         private bool backdropRequested;
         private bool glass;
+        private bool backdropFocused;
 
         private void ApplyAppearance()
         {
@@ -38,7 +39,15 @@ namespace ScdDesktop
             Color browserBackground = glass ? Color.Transparent : paper;
             if (browser.DefaultBackgroundColor != browserBackground)
                 browser.DefaultBackgroundColor = browserBackground;
-            Send(new { type = "appearance", preferences = appearance, glass = glass, titleHidden = titleHidden });
+            Send(new { type = "appearance", preferences = appearance, glass = glass,
+                titleHidden = titleHidden, focused = backdropFocused });
+        }
+
+        private void UpdateBackdropFocus(bool focused)
+        {
+            if (backdropFocused == focused) return;
+            backdropFocused = focused;
+            if (glass) Send(new { type = "backdrop-focus", focused = focused });
         }
 
         private void ToggleBrowse()

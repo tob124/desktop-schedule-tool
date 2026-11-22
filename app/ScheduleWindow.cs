@@ -112,8 +112,8 @@ namespace ScdDesktop
             exit.Tick += delegate { FinishExit(); };
             Move += delegate { SaveWindowSoon(); };
             ResizeEnd += delegate { SaveWindowSoon(); };
-            Activated += delegate { LowerMemoryWhenIdle(false); };
-            Deactivate += delegate { LowerMemoryWhenIdle(true); };
+            Activated += delegate { UpdateBackdropFocus(true); LowerMemoryWhenIdle(false); };
+            Deactivate += delegate { UpdateBackdropFocus(false); LowerMemoryWhenIdle(true); };
             foregroundCallback = delegate(IntPtr hook, uint change, IntPtr window,
                 int objectId, int childId, uint thread, uint time)
             {

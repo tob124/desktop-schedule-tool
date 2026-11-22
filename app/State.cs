@@ -69,7 +69,7 @@ namespace ScdDesktop
         {
             Version = 1;
             Books = new Dictionary<string, BookView>();
-            Appearance = new AppearancePreferences();
+            Appearance = AppearancePreferences.Normalize(null);
         }
 
         public BookView ViewFor(string path)
@@ -93,6 +93,8 @@ namespace ScdDesktop
         public bool HideTitleBar { get; set; }
         public bool Blur { get; set; }
         public int Opacity { get; set; }
+        public int? FocusedBackdropOpacity { get; set; }
+        public int? UnfocusedBackdropOpacity { get; set; }
         public string Color { get; set; }
 
         public AppearancePreferences()
@@ -104,7 +106,10 @@ namespace ScdDesktop
         public static AppearancePreferences Normalize(AppearancePreferences value)
         {
             value = value ?? new AppearancePreferences();
-            value.Opacity = Math.Max(30, Math.Min(100, value.Opacity));
+            value.Opacity = ClampOpacity(value.Opacity);
+            int backdropOpacity = !value.Blur && value.Opacity == 100 ? 85 : value.Opacity;
+            value.FocusedBackdropOpacity = ClampOpacity(value.FocusedBackdropOpacity ?? backdropOpacity);
+            value.UnfocusedBackdropOpacity = ClampOpacity(value.UnfocusedBackdropOpacity ?? backdropOpacity);
             int rgb;
             if (value.Color == null || value.Color.Length != 7 || value.Color[0] != '#' ||
                 !int.TryParse(value.Color.Substring(1), System.Globalization.NumberStyles.HexNumber,
@@ -112,6 +117,8 @@ namespace ScdDesktop
                 value.Color = "#ffffff";
             return value;
         }
+
+        private static int ClampOpacity(int opacity) { return Math.Max(30, Math.Min(100, opacity)); }
     }
 
     internal sealed class BookView
