@@ -626,6 +626,7 @@ namespace ScdDesktop
         {
             if (disposing)
             {
+                ReleaseBackdrop();
                 if (foregroundHook != IntPtr.Zero)
                 {
                     NativeWindow.UnhookWinEvent(foregroundHook);

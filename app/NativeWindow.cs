@@ -104,6 +104,14 @@ namespace ScdDesktop
             return applied && extended;
         }
 
+        public static bool SetHostBackdrop(IntPtr window, bool enabled)
+        {
+            int value = enabled ? 1 : 0;
+            bool applied = DwmSetWindowAttribute(window, 17, ref value, sizeof(int)) == 0;
+            var margins = new Margins { Left = enabled && applied ? -1 : 0 };
+            return DwmExtendFrameIntoClientArea(window, ref margins) == 0 && applied;
+        }
+
         public static void BeginMove(IntPtr window)
         {
             if ((GetAsyncKeyState(1) & 0x8000) == 0) return;

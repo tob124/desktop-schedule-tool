@@ -38,6 +38,11 @@ try {
     $arguments += @('System.Drawing.dll', 'System.Windows.Forms.dll', 'System.Web.Extensions.dll', 'Microsoft.CSharp.dll') |
         ForEach-Object { "/reference:$(Join-Path $framework $_)" }
     $arguments += $dlls | ForEach-Object { "/reference:$(Join-Path $sdkLibraries $_)" }
+    $arguments += @('System.Numerics.dll', 'System.Numerics.Vectors.dll', 'System.Runtime.WindowsRuntime.dll', 'System.Runtime.dll') |
+        ForEach-Object { "/reference:$(Join-Path $framework $_)" }
+    $metadata = Join-Path $env:WINDIR 'System32/WinMetadata'
+    $arguments += @('Windows.Foundation.winmd', 'Windows.System.winmd', 'Windows.UI.winmd') |
+        ForEach-Object { "/reference:$(Join-Path $metadata $_)" }
     & $compiler @arguments @sources
     if ($LASTEXITCODE) { throw 'Windows host build failed.' }
 

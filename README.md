@@ -16,7 +16,7 @@
 
 - 64 位 Windows 10 或 Windows 11
 - .NET Framework 4.8 和 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)
-- 亚克力背景模糊需要支持系统背景材质的 Windows 11，并受 Windows 透明效果设置影响。
+- 背景模糊使用 Windows 桌面合成，受系统透明效果设置影响。
 
 ## 从源码构建
 
@@ -26,4 +26,4 @@
 .\build.ps1
 ```
 
-构建脚本会获取锁定版本的 npm 依赖和 WebView2 SDK，生成 `bin\ScdDesktop.exe` 及配套文件。挂件使用 [xlsx-vanilla-viewer](https://www.npmjs.com/package/xlsx-vanilla-viewer) 显示表格，第三方许可证和声明随构建产物放在 `bin\licenses`。
+构建脚本会获取锁定版本的 npm 依赖和 WebView2 SDK，并使用系统自带的 Windows Runtime 元数据，生成 `bin\ScdDesktop.exe` 及配套文件。挂件使用 [xlsx-vanilla-viewer](https://www.npmjs.com/package/xlsx-vanilla-viewer) 显示表格，第三方许可证和声明随构建产物放在 `bin\licenses`。

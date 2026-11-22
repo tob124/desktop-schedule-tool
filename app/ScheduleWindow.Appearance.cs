@@ -15,6 +15,7 @@ namespace ScdDesktop
         private bool backdropRequested;
         private bool glass;
         private bool backdropFocused;
+        private HostBackdrop hostBackdrop;
 
         private void ApplyAppearance()
         {
@@ -31,8 +32,7 @@ namespace ScdDesktop
             {
                 appearanceWindow = Handle;
                 backdropRequested = appearance.Blur;
-                if (backdropRequested) Opacity = 1;
-                glass = NativeWindow.SetBackdrop(appearanceWindow, backdropRequested) && backdropRequested;
+                glass = ApplyBackdrop(appearanceWindow, backdropRequested);
             }
             Opacity = glass ? 1 : appearance.Opacity / 100.0;
             BackColor = glass ? Color.Black : paper;
@@ -41,6 +41,32 @@ namespace ScdDesktop
                 browser.DefaultBackgroundColor = browserBackground;
             Send(new { type = "appearance", preferences = appearance, glass = glass,
                 titleHidden = titleHidden, focused = backdropFocused });
+        }
+
+        private bool ApplyBackdrop(IntPtr window, bool blur)
+        {
+            ReleaseBackdrop();
+            NativeWindow.SetBackdrop(window, false);
+            if (!blur)
+            {
+                NativeWindow.SetHostBackdrop(window, false);
+                return false;
+            }
+
+            Opacity = 1;
+            // The system Acrylic material can become opaque on deactivation.
+            // A host backdrop brush samples behind the same HWND regardless of input focus.
+            if (NativeWindow.SetHostBackdrop(window, true)) hostBackdrop = HostBackdrop.TryCreate(window);
+            if (hostBackdrop != null) return true;
+            NativeWindow.SetHostBackdrop(window, false);
+            return NativeWindow.SetBackdrop(window, true);
+        }
+
+        private void ReleaseBackdrop()
+        {
+            if (hostBackdrop == null) return;
+            hostBackdrop.Dispose();
+            hostBackdrop = null;
         }
 
         private void UpdateBackdropFocus(bool focused)
