@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>日程表</title>
+  <link rel="stylesheet" href="/app.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <div id="underlay" aria-hidden="true"></div>
+  <header class="toolbar" aria-label="日程表工具">
+    <div class="source" data-drag title="无标题栏时可在此拖动窗口">
+      <span class="source-mark" aria-hidden="true"></span>
+      <div class="source-text">
+        <strong id="source-name">日程表</strong>
+        <span id="notice" role="status" aria-live="polite">正在读取工作簿</span>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="refresh" type="button" data-command="refresh">刷新</button>
+      <button id="toggle" class="accent" type="button" data-command="toggle">展开</button>
+      <details class="menu" id="menu">
+        <summary aria-label="更多操作" title="更多操作">⋯</summary>
+        <div class="menu-panel">
+          <div class="zoom" aria-label="查看缩放">
+            <button type="button" data-command="zoom-out" aria-label="缩小">−</button>
+            <button type="button" id="zoom" data-command="zoom-reset" aria-label="重置缩放">100%</button>
+            <button type="button" data-command="zoom-in" aria-label="放大">+</button>
+          </div>
+          <button type="button" data-command="browse">仅浏览 <kbd>F11</kbd></button>
+          <button type="button" data-command="settings">设置</button>
+          <button id="open" type="button" data-command="open" disabled>打开原表</button>
+          <button type="button" data-command="choose">更换工作簿</button>
+          <button type="button" data-command="exit">退出挂件</button>
+        </div>
+      </details>
+    </div>
+  </header>
+  <main id="viewer" aria-label="工作簿网格">
+    <div id="empty">
+      <p id="empty-text">正在读取工作簿…</p>
+      <button type="button" data-command="choose">选择工作簿</button>
+    </div>
+  </main>
+  <aside class="browse-tools" aria-label="仅浏览工具">
+    <details class="menu" id="browse-menu">
+      <summary aria-label="显示浏览工具" title="显示浏览工具">⋯</summary>
+      <div class="menu-panel">
+        <label class="sheet-picker">工作表
+          <select id="browse-sheets" disabled></select>
+        </label>
+        <button type="button" data-command="browse">恢复工具栏 <kbd>F11</kbd></button>
+        <button id="browse-toggle" type="button" data-command="toggle">展开</button>
+        <button type="button" data-command="settings">设置</button>
+        <button type="button" data-drag>按住拖动窗口</button>
+      </div>
+    </details>
+  </aside>
+  <dialog id="settings" aria-labelledby="settings-title">
+    <form id="settings-form">
+      <h1 id="settings-title">挂件设置</h1>
+      <div class="setting-group">
+        <label class="setting-line"><span>登录 Windows 时启动</span><input id="setting-startup" type="checkbox"></label>
+        <label class="setting-line"><span>仅浏览模式</span><input id="setting-browse" type="checkbox"></label>
+        <label class="setting-line"><span>常规模式也隐藏窗口标题栏</span><input id="setting-titlebar" type="checkbox"></label>
+      </div>
+      <div class="setting-group">
+        <label class="setting-line"><span>衬底颜色</span><input id="setting-color" type="color"></label>
+        <label class="setting-line"><span>背景模糊</span><input id="setting-blur" type="checkbox"></label>
+        <div class="setting-range">
+          <label for="setting-opacity" id="opacity-label">窗口不透明度</label>
+          <output id="setting-percent" for="setting-opacity">100%</output>
+          <input id="setting-opacity" type="range" min="30" max="100" step="1" value="100">
+        </div>
+        <p id="glass-note" class="setting-note" hidden>模糊使用 Windows 亚克力效果，受系统透明效果设置影响。调低衬底不透明度可看到背景。</p>
+      </div>
+      <p id="settings-message" role="alert" hidden></p>
+      <footer class="settings-actions">
+        <button type="button" id="settings-cancel">取消</button>
+        <button class="accent" type="submit" id="settings-save">应用</button>
+      </footer>
+    </form>
+  </dialog>
+</body>
+</html>

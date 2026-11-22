@@ -1,0 +1,8 @@
+/.build/
+/bin/
+/node_modules/
+/Rainmeter/
+/SheetLens/
+/xleak/
+*.lnk
+*.xlsx

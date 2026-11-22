@@ -1,0 +1,20 @@
+{
+  "name": "scd-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "bundle": "esbuild app/web/app.js --bundle --minify --format=esm --target=edge120 --outfile=bin/assets/app.js --legal-comments=linked"
+  },
+  "dependencies": {
+    "xlsx-vanilla-viewer": "2.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.27.3"
+  },
+  "overrides": {
+    "@christophervr/xlsx-core": "2.0.0",
+    "ooxml-core": "2.0.0",
+    "ooxml-ui": "2.0.0"
+  }
+}
