@@ -34,7 +34,11 @@ namespace ScdDesktop
 
         private IntPtr foregroundHook;
         private IntPtr externalForeground;
+        private IntPtr originalOwner;
+        private IntPtr desktopOwner;
         private int desktopChecks;
+        private bool lowerAfterInteraction;
+        private bool choosingWorkbook;
         private FileSystemWatcher watcher;
         private string sourcePath;
         private WorkbookSnapshot displayed;
@@ -113,9 +117,23 @@ namespace ScdDesktop
             foregroundCallback = delegate(IntPtr hook, uint change, IntPtr window,
                 int objectId, int childId, uint thread, uint time)
             {
-                if (window != IntPtr.Zero && IsHandleCreated && !NativeWindow.IsInWindow(window, Handle))
-                    externalForeground = window;
-                QueueDesktopOrder(NativeWindow.IsDesktop(window));
+                if (window == IntPtr.Zero || !IsHandleCreated) return;
+                bool ownedByDesktop = HasDesktopOwner();
+                if (NativeWindow.IsInWindow(window, Handle))
+                {
+                    lowerAfterInteraction = ownedByDesktop;
+                    return;
+                }
+                externalForeground = window;
+                if (!CanPlaceOnDesktop()) return;
+                bool shellForeground = NativeWindow.IsDesktop(window);
+                if (!ownedByDesktop)
+                    QueueDesktopOrder(shellForeground);
+                else if (lowerAfterInteraction && !shellForeground)
+                {
+                    lowerAfterInteraction = false;
+                    NativeWindow.SetDesktopOrder(Handle, externalForeground, false);
+                }
             };
         }
 
@@ -135,13 +153,14 @@ namespace ScdDesktop
         protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
+            originalOwner = NativeWindow.GetOwner(Handle);
             ApplyBounds();
             ApplyAppearance();
             externalForeground = NativeWindow.GetForegroundWindow();
             NativeWindow.SetDesktopWindowTraits(Handle, true);
             foregroundHook = NativeWindow.SetWinEventHook(NativeWindow.ForegroundEvent, NativeWindow.ForegroundEvent,
                 IntPtr.Zero, foregroundCallback, 0, 0, 0);
-            QueueDesktopOrder();
+            AttachToDesktop();
             try
             {
                 string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets");
@@ -391,19 +410,30 @@ namespace ScdDesktop
 
         private void ChooseWorkbook()
         {
-            using (var picker = new OpenFileDialog {
-                Filter = "Excel 工作簿 (*.xlsx)|*.xlsx", CheckFileExists = true, Multiselect = false,
-                Title = "选择日程工作簿", InitialDirectory = Path.GetDirectoryName(sourcePath)
-            })
+            if (choosingWorkbook || exitRequested) return;
+            choosingWorkbook = true;
+            DetachFromDesktop();
+            try
             {
-                if (picker.ShowDialog(this) != DialogResult.OK) return;
-                string selected = Normalize(picker.FileName);
-                if (selected == null) return;
-                sourcePath = selected;
-                pending = null;
-                Send(new { type = "cancel", revision = ++revision });
-                ResetWatcher();
-                RequestRead(true);
+                using (var picker = new OpenFileDialog {
+                    Filter = "Excel 工作簿 (*.xlsx)|*.xlsx", CheckFileExists = true, Multiselect = false,
+                    Title = "选择日程工作簿", InitialDirectory = Path.GetDirectoryName(sourcePath)
+                })
+                {
+                    if (picker.ShowDialog(this) != DialogResult.OK) return;
+                    string selected = Normalize(picker.FileName);
+                    if (selected == null) return;
+                    sourcePath = selected;
+                    pending = null;
+                    Send(new { type = "cancel", revision = ++revision });
+                    ResetWatcher();
+                    RequestRead(true);
+                }
+            }
+            finally
+            {
+                choosingWorkbook = false;
+                AttachToDesktop();
             }
         }
 
@@ -446,6 +476,7 @@ namespace ScdDesktop
             {
                 CapturePlacement();
                 expanded = true;
+                DetachFromDesktop();
                 NativeWindow.SetDesktopWindowTraits(Handle, false);
                 ApplyBounds();
             }
@@ -464,7 +495,7 @@ namespace ScdDesktop
             NativeWindow.SetDesktopWindowTraits(Handle, true);
             ApplyBounds();
             Send(new { type = "mode", expanded = false });
-            NativeWindow.SetDesktopOrder(Handle, externalForeground, true);
+            AttachToDesktop();
             ScheduleSave();
         }
 
@@ -491,7 +522,38 @@ namespace ScdDesktop
             if (!expanded && m.Msg == NativeWindow.SystemCommand && (m.WParam.ToInt64() & 0xfff0) == NativeWindow.Minimize)
                 return;
             base.WndProc(ref m);
-            if ((uint)m.Msg == taskbarCreated) QueueDesktopOrder();
+            if ((uint)m.Msg == taskbarCreated) AttachToDesktop();
+        }
+
+        private void AttachToDesktop()
+        {
+            if (!CanPlaceOnDesktop()) return;
+            zOrder.Stop();
+            IntPtr owner = NativeWindow.GetDesktopOwner();
+            if (owner != IntPtr.Zero && NativeWindow.SetOwner(Handle, owner))
+            {
+                // Keep this HWND in Explorer's z-order group without changing its DPI or WebView.
+                desktopOwner = owner;
+                NativeWindow.SetDesktopOrder(Handle, externalForeground, true);
+            }
+            else
+            {
+                DetachFromDesktop();
+                QueueDesktopOrder(NativeWindow.IsDesktop(NativeWindow.GetForegroundWindow()));
+            }
+        }
+
+        private bool HasDesktopOwner()
+        {
+            return desktopOwner != IntPtr.Zero && NativeWindow.GetOwner(Handle) == desktopOwner;
+        }
+
+        private void DetachFromDesktop()
+        {
+            zOrder.Stop();
+            if (IsHandleCreated && HasDesktopOwner()) NativeWindow.SetOwner(Handle, originalOwner);
+            desktopOwner = IntPtr.Zero;
+            lowerAfterInteraction = false;
         }
 
         private void QueueDesktopOrder(bool shellChanged = false)
@@ -508,7 +570,7 @@ namespace ScdDesktop
 
         private bool CanPlaceOnDesktop()
         {
-            return !expanded && !settingsOpen && !exitRequested && IsHandleCreated && !IsDisposed;
+            return !expanded && !settingsOpen && !choosingWorkbook && !exitRequested && IsHandleCreated && !IsDisposed;
         }
 
         private void CapturePlacement()
@@ -548,6 +610,7 @@ namespace ScdDesktop
             exitRequested = true;
             CapturePlacement();
             SaveState();
+            DetachFromDesktop();
             base.OnFormClosing(e);
         }
 

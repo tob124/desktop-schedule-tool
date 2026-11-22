@@ -146,6 +146,24 @@ namespace ScdDesktop
             return window != IntPtr.Zero && (window == widget || GetAncestor(window, 2) == widget);
         }
 
+        public static IntPtr GetOwner(IntPtr window)
+        {
+            return GetWindow(window, 4); // GW_OWNER
+        }
+
+        public static bool SetOwner(IntPtr window, IntPtr owner)
+        {
+            if (GetOwner(window) != owner)
+                SetWindowStyle(window, -8, owner); // GWLP_HWNDPARENT on a top-level window
+            return GetOwner(window) == owner;
+        }
+
+        public static IntPtr GetDesktopOwner()
+        {
+            IntPtr desktop = DesktopIconsHost();
+            return IsDesktop(desktop) ? desktop : GetShellWindow();
+        }
+
         public static bool IsDesktop(IntPtr window)
         {
             if (window == IntPtr.Zero) return false;

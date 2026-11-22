@@ -11,6 +11,9 @@ namespace ScdDesktop
             new StartupRegistration(Environment.GetFolderPath(Environment.SpecialFolder.Startup), Application.ExecutablePath);
         private bool titleHidden;
         private bool settingsOpen;
+        private IntPtr appearanceWindow;
+        private bool backdropRequested;
+        private bool glass;
 
         private void ApplyAppearance()
         {
@@ -23,11 +26,18 @@ namespace ScdDesktop
                 NativeWindow.SetCaptionVisible(Handle, !hide);
             }
             Color paper = ColorTranslator.FromHtml(appearance.Color);
-            if (appearance.Blur) Opacity = 1;
-            bool glass = NativeWindow.SetBackdrop(Handle, appearance.Blur) && appearance.Blur;
+            if (appearanceWindow != Handle || backdropRequested != appearance.Blur)
+            {
+                appearanceWindow = Handle;
+                backdropRequested = appearance.Blur;
+                if (backdropRequested) Opacity = 1;
+                glass = NativeWindow.SetBackdrop(appearanceWindow, backdropRequested) && backdropRequested;
+            }
             Opacity = glass ? 1 : appearance.Opacity / 100.0;
             BackColor = glass ? Color.Black : paper;
-            browser.DefaultBackgroundColor = glass ? Color.Transparent : paper;
+            Color browserBackground = glass ? Color.Transparent : paper;
+            if (browser.DefaultBackgroundColor != browserBackground)
+                browser.DefaultBackgroundColor = browserBackground;
             Send(new { type = "appearance", preferences = appearance, glass = glass, titleHidden = titleHidden });
         }
 
@@ -43,6 +53,7 @@ namespace ScdDesktop
             if (!ready || exitRequested) return;
             var startupEnabled = ReadStartupStatus();
             settingsOpen = true;
+            DetachFromDesktop();
             Show();
             BringToFront();
             Activate();
@@ -61,7 +72,7 @@ namespace ScdDesktop
         {
             if (!settingsOpen) return;
             settingsOpen = false;
-            if (!expanded && !exitRequested) NativeWindow.SetDesktopOrder(Handle, externalForeground, true);
+            AttachToDesktop();
         }
 
         private void SavePreferences(AppearancePreferences requested, bool? startOnLogin)
